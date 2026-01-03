@@ -93,19 +93,46 @@ impl Logger {
         }
     }
 
+    /// Check if progress should be shown based on cargo's term.progress.when
+    /// setting (respects CARGO_TERM_PROGRESS_WHEN environment variable)
+    fn should_show_progress(&self) -> bool {
+        if self.quiet {
+            return false;
+        }
+        // Respect cargo's term.progress.when setting
+        // Values: "auto" (default), "always", "never"
+        match std::env::var("CARGO_TERM_PROGRESS_WHEN")
+            .as_deref()
+            .unwrap_or("auto")
+        {
+            "never" => false,
+            "always" => true,
+            "auto" => {
+                // Auto: show if stdout is a TTY (interactive terminal)
+                atty::is(atty::Stream::Stdout)
+            }
+            _ => {
+                // Default to auto behavior for unknown values
+                atty::is(atty::Stream::Stdout)
+            }
+        }
+    }
+
     /// Set a status message with a progress bar (ephemeral, like cargo's
     /// "Compiling")
     fn set_progress(&mut self, total: u64) {
-        if !self.quiet {
-            let pb = ProgressBar::new(total);
-            pb.set_style(
-                ProgressStyle::default_bar()
-                    .template("{spinner:.green} {msg} [{bar:40.cyan/blue}] {pos}/{len}")
-                    .unwrap()
-                    .progress_chars("#>-"),
-            );
-            self.progress = Some(pb);
+        if !self.should_show_progress() {
+            return;
         }
+        let pb = ProgressBar::new(total);
+        // Match cargo's progress bar style more closely
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner:.green} {msg} [{bar:40.cyan/blue}] {pos}/{len}")
+                .unwrap()
+                .progress_chars("#>-"),
+        );
+        self.progress = Some(pb);
     }
 
     /// Update progress status message
@@ -123,6 +150,7 @@ impl Logger {
     }
 
     /// Print a permanent message (will be kept in output)
+    /// Format matches cargo's style: "   ✓ message" or "   message"
     fn println(&mut self, msg: &str) {
         if !self.quiet {
             // If we have an active progress bar, suspend it while printing
@@ -132,6 +160,19 @@ impl Logger {
                 });
             } else {
                 println!("{}", msg);
+            }
+        }
+    }
+
+    /// Print a status message in cargo's style: "   Compiling crate-name"
+    fn status(&mut self, action: &str, target: &str) {
+        if !self.quiet {
+            if let Some(pb) = &self.progress {
+                pb.suspend(|| {
+                    println!("   {} {}", action, target);
+                });
+            } else {
+                println!("   {} {}", action, target);
             }
         }
     }
@@ -178,18 +219,13 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
     let mut logger = Logger::new(args.quiet);
 
     // Use cargo_metadata to get all workspace packages - no need to manually
-    // discover! Filter to packages in the workspace's crates directory.
+    // discover! Process all packages in the workspace (supports both single-package
+    // projects and workspace projects with packages in crates/ or elsewhere).
     let mut crates: Vec<CrateInfo> = metadata
         .packages
         .iter()
         .filter_map(|pkg| {
             let manifest_dir = pkg.manifest_path.as_std_path().parent()?;
-
-            // Check if this package is in the workspace's crates directory
-            let crates_dir = workspace_path.join("crates");
-            if !manifest_dir.starts_with(&crates_dir) {
-                return None;
-            }
 
             // Extract features from cargo_metadata (already parsed!)
             let features: HashSet<String> = pkg.features.keys().cloned().collect();
@@ -235,7 +271,7 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
 
     // First pass: Remove hardcoded runtime features from dependencies
     logger.set_progress(crates.len() as u64);
-    logger.set_message("🧹 Checking for hardcoded features");
+    logger.set_message("Checking");
 
     for crate_info in &crates {
         logger.inc();
@@ -339,7 +375,7 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
 
     // Second pass: Propagate features
     logger.set_progress(crates.len() as u64);
-    logger.set_message("🔗 Propagating features");
+    logger.set_message("Propagating");
 
     for crate_info in &crates {
         logger.inc();
@@ -404,10 +440,10 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
                 for dep in &deps_with_feature {
                     let dep_feature = format!("{}/{}", dep, feature_name);
                     if !existing.contains(&dep_feature) {
-                        logger.println(&format!(
-                            "   ✓ {}: Adding {}/{} to {}",
-                            crate_info.name, dep, feature_name, feature_name
-                        ));
+                        logger.status(
+                            "Adding",
+                            &format!("{}/{} to {}", dep, feature_name, feature_name),
+                        );
                         feature_array.push(dep_feature.clone());
                         existing.insert(dep_feature);
                         changed = true;
