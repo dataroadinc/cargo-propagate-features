@@ -9,10 +9,7 @@ use std::collections::{
     HashMap,
     HashSet,
 };
-use std::path::{
-    Path,
-    PathBuf,
-};
+use std::path::PathBuf;
 
 use anyhow::{
     Context,
@@ -27,7 +24,6 @@ use toml_edit::{
     DocumentMut,
     Item,
 };
-use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -157,10 +153,18 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
         "Failed to get cargo metadata. Make sure you're in a Cargo project or use --manifest-path.",
     )?;
 
-    // Determine workspace root: use explicit workspace_path, or derive from
-    // metadata
+    // Determine workspace root: use explicit workspace_path (if it's a directory),
+    // or derive from metadata
     let workspace_path = if let Some(ws_path) = &args.workspace_path {
-        ws_path.clone()
+        // If it's a Cargo.toml file, get its parent directory
+        if ws_path.ends_with("Cargo.toml") {
+            ws_path
+                .parent()
+                .context("Cargo.toml has no parent directory")?
+                .to_path_buf()
+        } else {
+            ws_path.clone()
+        }
     } else {
         metadata.workspace_root.as_std_path().to_path_buf()
     };
@@ -173,7 +177,52 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
 
     let mut logger = Logger::new(args.quiet);
 
-    let crates = discover_crates(&workspace_path)?;
+    // Use cargo_metadata to get all workspace packages - no need to manually
+    // discover! Filter to packages in the workspace's crates directory.
+    let crates: Vec<CrateInfo> = metadata
+        .packages
+        .iter()
+        .filter_map(|pkg| {
+            let manifest_dir = pkg.manifest_path.as_std_path().parent()?;
+
+            // Check if this package is in the workspace's crates directory
+            let crates_dir = workspace_path.join("crates");
+            if !manifest_dir.starts_with(&crates_dir) {
+                return None;
+            }
+
+            // Extract features from cargo_metadata (already parsed!)
+            let features: HashSet<String> = pkg.features.keys().cloned().collect();
+
+            // Extract workspace dependencies (only those starting with "ekg-")
+            // Check if dependency is in the workspace by looking it up in metadata.packages
+            let workspace_package_names: HashSet<String> = metadata
+                .packages
+                .iter()
+                .map(|p| p.name.as_str().to_string())
+                .collect();
+
+            let dependencies: HashSet<String> = pkg
+                .dependencies
+                .iter()
+                .filter(|dep| {
+                    // Only include dependencies that:
+                    // 1. Start with "ekg-"
+                    // 2. Are in the workspace (exist in metadata.packages)
+                    let dep_name = dep.name.as_str();
+                    dep_name.starts_with("ekg-") && workspace_package_names.contains(dep_name)
+                })
+                .map(|dep| dep.name.as_str().to_string())
+                .collect();
+
+            Some(CrateInfo {
+                name: pkg.name.as_str().to_string(),
+                path: manifest_dir.to_path_buf(),
+                features,
+                dependencies,
+            })
+        })
+        .collect();
 
     // Build a map of crate name -> features
     let crate_features: HashMap<String, HashSet<String>> = crates
@@ -450,97 +499,4 @@ fn remove_hardcoded_features(
     }
 
     Ok(changed)
-}
-
-fn discover_crates(workspace_path: &Path) -> Result<Vec<CrateInfo>> {
-    let mut crates = Vec::new();
-    let crates_dir = workspace_path.join("crates");
-
-    for entry in WalkDir::new(&crates_dir)
-        .min_depth(2)
-        .max_depth(2)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let path = entry.path();
-        if path.file_name() == Some("Cargo.toml".as_ref())
-            && let Some(crate_info) = parse_crate_info(path)?
-        {
-            crates.push(crate_info);
-        }
-    }
-
-    Ok(crates)
-}
-
-fn parse_crate_info(cargo_toml_path: &Path) -> Result<Option<CrateInfo>> {
-    let content = std::fs::read_to_string(cargo_toml_path)?;
-    let doc: toml::Value = toml::from_str(&content)?;
-
-    let package = match doc.get("package") {
-        Some(p) => p,
-        None => return Ok(None),
-    };
-
-    let name = match package.get("name").and_then(|name_val| name_val.as_str()) {
-        Some(name_str) => name_str.to_string(),
-        None => return Ok(None),
-    };
-
-    // Parse features
-    let mut features = HashSet::new();
-    if let Some(features_table) = doc.get("features").and_then(|f| f.as_table()) {
-        for (feature_name, _) in features_table {
-            features.insert(feature_name.clone());
-        }
-    }
-
-    // Parse dependencies (both regular and target-specific)
-    let mut dependencies = HashSet::new();
-
-    // Regular dependencies
-    if let Some(deps) = doc.get("dependencies").and_then(|d| d.as_table()) {
-        for (dep_name, dep_val) in deps {
-            // Only include workspace dependencies that start with "ekg-"
-            if !dep_name.starts_with("ekg-") {
-                continue;
-            }
-
-            if let Some(table) = dep_val.as_table()
-                && table.contains_key("workspace")
-            {
-                dependencies.insert(dep_name.clone());
-            }
-        }
-    }
-
-    // Target-specific dependencies
-    // Note: This section has deep nesting due to TOML structure traversal
-    #[allow(clippy::excessive_nesting)]
-    if let Some(target) = doc.get("target").and_then(|t| t.as_table()) {
-        for (_, target_config) in target {
-            if let Some(deps) = target_config.get("dependencies").and_then(|d| d.as_table()) {
-                for (dep_name, dep_val) in deps {
-                    if !dep_name.starts_with("ekg-") {
-                        continue;
-                    }
-
-                    if let Some(table) = dep_val.as_table()
-                        && table.contains_key("workspace")
-                    {
-                        dependencies.insert(dep_name.clone());
-                    }
-                }
-            }
-        }
-    }
-
-    let crate_dir = cargo_toml_path.parent().unwrap().to_path_buf();
-
-    Ok(Some(CrateInfo {
-        name,
-        path: crate_dir,
-        features,
-        dependencies,
-    }))
 }

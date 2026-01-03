@@ -74,13 +74,16 @@ cargo propagate-features [OPTIONS]
 - `--dry-run`: Show what would be changed without modifying files
 - `--features <FEATURES>`: Comma-separated list of features to
   propagate (default: backend,cli,desktop,web)
-- `--workspace-path <PATH>`: Path to workspace root (optional,
-  defaults to workspace containing the manifest)
+- `--workspace-path <PATH>`: Path to workspace root or Cargo.toml
+  (optional, defaults to workspace containing the manifest). When
+  using `cargo run`, you can point to a Cargo.toml file directly.
 - `--quiet`: Suppress output when there are no changes
 
-The command automatically respects Cargo's standard options:
+The command automatically respects Cargo's standard options when
+installed and invoked via `cargo`:
 
-- `--manifest-path <PATH>`: Path to Cargo.toml (automatically handled)
+- `--manifest-path <PATH>`: Path to Cargo.toml (automatically handled
+  via cargo_metadata)
 - `--package <SPEC>`: Work on a specific package (if supported)
 
 ## License
