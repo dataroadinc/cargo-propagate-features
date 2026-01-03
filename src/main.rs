@@ -179,7 +179,7 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
 
     // Use cargo_metadata to get all workspace packages - no need to manually
     // discover! Filter to packages in the workspace's crates directory.
-    let crates: Vec<CrateInfo> = metadata
+    let mut crates: Vec<CrateInfo> = metadata
         .packages
         .iter()
         .filter_map(|pkg| {
@@ -194,25 +194,16 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
             // Extract features from cargo_metadata (already parsed!)
             let features: HashSet<String> = pkg.features.keys().cloned().collect();
 
-            // Extract workspace dependencies (only those starting with "ekg-")
-            // Check if dependency is in the workspace by looking it up in metadata.packages
-            let workspace_package_names: HashSet<String> = metadata
-                .packages
-                .iter()
-                .map(|p| p.name.as_str().to_string())
-                .collect();
-
+            // Extract workspace dependencies (any dependency that exists in the workspace)
+            // We'll build workspace_package_names outside the loop for efficiency
             let dependencies: HashSet<String> = pkg
                 .dependencies
                 .iter()
-                .filter(|dep| {
-                    // Only include dependencies that:
-                    // 1. Start with "ekg-"
-                    // 2. Are in the workspace (exist in metadata.packages)
-                    let dep_name = dep.name.as_str();
-                    dep_name.starts_with("ekg-") && workspace_package_names.contains(dep_name)
+                .filter_map(|dep| {
+                    // Only include dependencies that are in the workspace
+                    // We'll verify this later when we have the full workspace_package_names set
+                    Some(dep.name.as_str().to_string())
                 })
-                .map(|dep| dep.name.as_str().to_string())
                 .collect();
 
             Some(CrateInfo {
@@ -223,6 +214,20 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
             })
         })
         .collect();
+
+    // Build a set of workspace package names for efficient lookup
+    let workspace_package_names: HashSet<String> = metadata
+        .packages
+        .iter()
+        .map(|p| p.name.as_str().to_string())
+        .collect();
+
+    // Filter dependencies to only include those actually in the workspace
+    for crate_info in &mut crates {
+        crate_info
+            .dependencies
+            .retain(|dep_name| workspace_package_names.contains(dep_name));
+    }
 
     // Build a map of crate name -> features
     let crate_features: HashMap<String, HashSet<String>> = crates
@@ -255,6 +260,7 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
             "dependencies",
             &target_features,
             &crate_info.name,
+            &workspace_package_names,
             &mut logger,
         )?;
 
@@ -264,6 +270,7 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
             "dev-dependencies",
             &target_features,
             &crate_info.name,
+            &workspace_package_names,
             &mut logger,
         )?;
 
@@ -278,15 +285,14 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
                     .and_then(|d| d.as_table_mut())
                 {
                     for (dep_name, dep_value) in deps.iter_mut() {
-                        if !dep_name.starts_with("ekg-") {
-                            continue;
-                        }
-
                         let Some(dep_table) = dep_value.as_inline_table_mut() else {
                             continue;
                         };
 
+                        // Only process workspace dependencies that are actually in the workspace
+                        let dep_name_str = dep_name.to_string();
                         if !dep_table.contains_key("workspace")
+                            || !workspace_package_names.contains(&dep_name_str)
                             || !dep_table.contains_key("features")
                         {
                             continue;
@@ -450,6 +456,7 @@ fn remove_hardcoded_features(
     section: &str,
     target_features: &HashSet<String>,
     crate_name: &str,
+    workspace_package_names: &HashSet<String>,
     logger: &mut Logger,
 ) -> Result<bool> {
     let mut changed = false;
@@ -459,16 +466,16 @@ fn remove_hardcoded_features(
     };
 
     for (dep_name, dep_value) in deps.iter_mut() {
-        // Only check workspace dependencies that start with "ekg-"
-        if !dep_name.starts_with("ekg-") {
-            continue;
-        }
-
         let Some(dep_table) = dep_value.as_inline_table_mut() else {
             continue;
         };
 
-        if !dep_table.contains_key("workspace") || !dep_table.contains_key("features") {
+        // Only process workspace dependencies that are actually in the workspace
+        let dep_name_str = dep_name.to_string();
+        if !dep_table.contains_key("workspace")
+            || !workspace_package_names.contains(&dep_name_str)
+            || !dep_table.contains_key("features")
+        {
             continue;
         }
 
