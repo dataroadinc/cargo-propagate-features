@@ -196,7 +196,9 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
 
     // Determine workspace root: use explicit workspace_path (if it's a directory),
     // or derive from metadata
-    let workspace_path = if let Some(ws_path) = &args.workspace_path {
+    // Note: workspace_path is currently unused but kept for potential future use
+    // (e.g., filtering packages by location)
+    let _workspace_path = if let Some(ws_path) = &args.workspace_path {
         // If it's a Cargo.toml file, get its parent directory
         if ws_path.ends_with("Cargo.toml") {
             ws_path
