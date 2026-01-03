@@ -195,15 +195,11 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
             let features: HashSet<String> = pkg.features.keys().cloned().collect();
 
             // Extract workspace dependencies (any dependency that exists in the workspace)
-            // We'll build workspace_package_names outside the loop for efficiency
+            // We'll filter to workspace packages later when we have the full set
             let dependencies: HashSet<String> = pkg
                 .dependencies
                 .iter()
-                .filter_map(|dep| {
-                    // Only include dependencies that are in the workspace
-                    // We'll verify this later when we have the full workspace_package_names set
-                    Some(dep.name.as_str().to_string())
-                })
+                .map(|dep| dep.name.as_str().to_string())
                 .collect();
 
             Some(CrateInfo {
