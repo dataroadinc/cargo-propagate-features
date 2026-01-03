@@ -52,10 +52,12 @@ struct PropagateArgs {
     #[arg(long, default_value = "backend,cli,desktop,web")]
     features: String,
 
-    /// Path to workspace root (defaults to current directory or workspace
-    /// containing --manifest-path)
+    /// Path to Cargo.toml manifest (idiomatic cargo flag)
+    ///
+    /// Note: When using `cargo run`, place this flag BEFORE the `--`:
+    /// `cargo run --manifest-path <path> -- propagate-features`
     #[arg(long)]
-    workspace_path: Option<PathBuf>,
+    manifest_path: Option<PathBuf>,
 
     /// Suppress output when there are no changes
     #[arg(long)]
