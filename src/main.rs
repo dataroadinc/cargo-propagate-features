@@ -56,9 +56,10 @@ struct PropagateArgs {
     #[arg(long, default_value = "backend,cli,desktop,web")]
     features: String,
 
-    /// Path to workspace root
-    #[arg(long, default_value = ".")]
-    workspace_path: PathBuf,
+    /// Path to workspace root (defaults to current directory or workspace
+    /// containing --manifest-path)
+    #[arg(long)]
+    workspace_path: Option<PathBuf>,
 
     /// Suppress output when there are no changes
     #[arg(long)]
@@ -148,6 +149,22 @@ impl Logger {
 }
 
 fn propagate_features(args: PropagateArgs) -> Result<()> {
+    // Use cargo_metadata to automatically respect cargo's --manifest-path option
+    // This is the idiomatic way for cargo subcommands
+    use cargo_metadata::MetadataCommand;
+
+    let metadata = MetadataCommand::new().exec().context(
+        "Failed to get cargo metadata. Make sure you're in a Cargo project or use --manifest-path.",
+    )?;
+
+    // Determine workspace root: use explicit workspace_path, or derive from
+    // metadata
+    let workspace_path = if let Some(ws_path) = &args.workspace_path {
+        ws_path.clone()
+    } else {
+        metadata.workspace_root.as_std_path().to_path_buf()
+    };
+
     let target_features: HashSet<String> = args
         .features
         .split(',')
@@ -156,7 +173,7 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
 
     let mut logger = Logger::new(args.quiet);
 
-    let crates = discover_crates(&args.workspace_path)?;
+    let crates = discover_crates(&workspace_path)?;
 
     // Build a map of crate name -> features
     let crate_features: HashMap<String, HashSet<String>> = crates

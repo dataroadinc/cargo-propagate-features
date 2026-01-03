@@ -6,20 +6,20 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/crates/d/cargo-propagate-features.svg)](https://crates.io/crates/cargo-propagate-features)
 
-Cargo subcommand to automatically propagate workspace crate features to
-their dependencies.
+Cargo subcommand to automatically propagate workspace crate features
+to their dependencies.
 
 ## What it does
 
-For any crate A with feature X depending on crate B that also has feature
-X, this tool ensures that crate A's feature X includes "B/X" in its
-feature dependencies.
+For any crate A with feature X depending on crate B that also has
+feature X, this tool ensures that crate A's feature X includes "B/X"
+in its feature dependencies.
 
 ## Example
 
 If `ekg-deployment-config` has features `[backend, cli, desktop, web]`
-and depends on `ekg-types` which also has those features, this tool will
-update:
+and depends on `ekg-types` which also has those features, this tool
+will update:
 
 ```toml
 [features]
@@ -74,9 +74,14 @@ cargo propagate-features [OPTIONS]
 - `--dry-run`: Show what would be changed without modifying files
 - `--features <FEATURES>`: Comma-separated list of features to
   propagate (default: backend,cli,desktop,web)
-- `--workspace-path <PATH>`: Path to workspace root (default: current
-  directory)
+- `--workspace-path <PATH>`: Path to workspace root (optional,
+  defaults to workspace containing the manifest)
 - `--quiet`: Suppress output when there are no changes
+
+The command automatically respects Cargo's standard options:
+
+- `--manifest-path <PATH>`: Path to Cargo.toml (automatically handled)
+- `--package <SPEC>`: Work on a specific package (if supported)
 
 ## License
 
