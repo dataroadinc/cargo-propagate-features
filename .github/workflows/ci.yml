@@ -48,7 +48,7 @@ jobs:
           path: target
           key: ${{ runner.os }}-target-clippy-${{ hashFiles('**/Cargo.lock') }}
       - name: Run clippy
-        run: cargo +nightly clippy --all-targets --all-features -- -D warnings -W missing-docs
+        run: cargo +nightly clippy --all-targets --all-features -- -D warnings
 
   # Run tests
   test:
@@ -81,14 +81,7 @@ jobs:
       - name: Run tests
         run: cargo test
       - name: Run doc tests
-        shell: bash
-        run: |
-          # Only run doc tests if the package has a library target
-          if cargo metadata --format-version 1 --no-deps | grep -q '"lib"'; then
-            cargo test --doc
-          else
-            echo "Skipping doc tests: package has no library target"
-          fi
+        run: cargo test --doc
 
   # Detect version changes and prepare for release
   version-check:

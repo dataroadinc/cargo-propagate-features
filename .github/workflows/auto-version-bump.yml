@@ -122,5 +122,5 @@ jobs:
         run: |
           echo "🎉 Successfully released v$NEW_VERSION"
           echo "📦 Published to crates.io: https://crates.io/crates/cargo-propagate-features"
-          echo "📝 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/v$NEW_VERSION"
+          echo "📝 GitHub Release: https://github.com/agnos-ai/cargo-propagate-features/releases/tag/v$NEW_VERSION"
           echo "📚 Documentation: https://docs.rs/cargo-propagate-features/$NEW_VERSION"
