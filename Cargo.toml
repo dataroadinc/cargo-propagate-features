@@ -41,12 +41,13 @@ clap = { version = "4.5.53", default-features = false, features = [
 ] }
 serde = { version = "1", features = ["derive"] }
 toml_edit = "=0.23.9"
-cargo-plugin-utils = { path = "../cargo-plugin-utils" }
+cargo-plugin-utils = "0.0.3"
 
 [build-dependencies]
 cargo-version-info = "0.0.3"
 sloughi = "0.3"
 
 [package.metadata.binstall]
-pkg-url = "https://github.com/dataroadinc/cargo-propagate-features/releases/download/v{{version}}/cargo-propagate-features-{{target}}-{{version}}.tar.gz"
-pkg-fmt = "tar.gz"
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }.{ archive-format }"
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "zip"
