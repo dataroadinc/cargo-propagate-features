@@ -34,16 +34,14 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.100"
-atty = "0.2.14"
-cargo_metadata = "0.23.1"
 clap = { version = "4.5.53", default-features = false, features = [
     "derive",
     "env",
     "std",
 ] }
-indicatif = "0.18.3"
 serde = { version = "1", features = ["derive"] }
 toml_edit = "=0.23.9"
+cargo-plugin-utils = { path = "../cargo-plugin-utils" }
 
 [build-dependencies]
 cargo-version-info = "0.0.3"

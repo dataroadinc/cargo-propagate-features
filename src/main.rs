@@ -15,11 +15,8 @@ use anyhow::{
     Context,
     Result,
 };
+use cargo_plugin_utils::ProgressLogger;
 use clap::Parser;
-use indicatif::{
-    ProgressBar,
-    ProgressStyle,
-};
 use toml_edit::{
     DocumentMut,
     Item,
@@ -80,153 +77,22 @@ fn main() -> Result<()> {
     }
 }
 
-/// Logger for handling output with quiet mode and cargo-style ephemeral
-/// messages
-struct Logger {
-    quiet: bool,
-    progress: Option<ProgressBar>,
-}
-
-impl Logger {
-    fn new(quiet: bool) -> Self {
-        Self {
-            quiet,
-            progress: None,
-        }
-    }
-
-    /// Check if progress should be shown based on cargo's term.progress.when
-    /// setting (respects CARGO_TERM_PROGRESS_WHEN environment variable)
-    fn should_show_progress(&self) -> bool {
-        if self.quiet {
-            return false;
-        }
-        // Respect cargo's term.progress.when setting
-        // Values: "auto" (default), "always", "never"
-        match std::env::var("CARGO_TERM_PROGRESS_WHEN")
-            .as_deref()
-            .unwrap_or("auto")
-        {
-            "never" => false,
-            "always" => true,
-            "auto" => {
-                // Auto: show if stdout is a TTY (interactive terminal)
-                atty::is(atty::Stream::Stdout)
-            }
-            _ => {
-                // Default to auto behavior for unknown values
-                atty::is(atty::Stream::Stdout)
-            }
-        }
-    }
-
-    /// Set a status message with a progress bar (ephemeral, like cargo's
-    /// "Compiling")
-    fn set_progress(&mut self, total: u64) {
-        if !self.should_show_progress() {
-            return;
-        }
-        let pb = ProgressBar::new(total);
-        // Match cargo's progress bar style more closely
-        pb.set_style(
-            ProgressStyle::default_bar()
-                .template("{spinner:.green} {msg} [{bar:40.cyan/blue}] {pos}/{len}")
-                .unwrap()
-                .progress_chars("#>-"),
-        );
-        self.progress = Some(pb);
-    }
-
-    /// Update progress status message
-    fn set_message(&self, msg: &str) {
-        if let Some(pb) = &self.progress {
-            pb.set_message(msg.to_string());
-        }
-    }
-
-    /// Increment progress
-    fn inc(&self) {
-        if let Some(pb) = &self.progress {
-            pb.inc(1);
-        }
-    }
-
-    /// Print a permanent message (will be kept in output)
-    /// Format matches cargo's style: "   ✓ message" or "   message"
-    fn println(&mut self, msg: &str) {
-        if !self.quiet {
-            // If we have an active progress bar, suspend it while printing
-            if let Some(pb) = &self.progress {
-                pb.suspend(|| {
-                    println!("{}", msg);
-                });
-            } else {
-                println!("{}", msg);
-            }
-        }
-    }
-
-    /// Print a status message in cargo's style: "   Compiling crate-name"
-    fn status(&mut self, action: &str, target: &str) {
-        if !self.quiet {
-            if let Some(pb) = &self.progress {
-                pb.suspend(|| {
-                    println!("   {} {}", action, target);
-                });
-            } else {
-                println!("   {} {}", action, target);
-            }
-        }
-    }
-
-    /// Clear/finish the progress bar
-    fn finish(&mut self) {
-        if let Some(pb) = self.progress.take() {
-            pb.finish_and_clear();
-        }
-    }
-}
-
 fn propagate_features(args: PropagateArgs) -> Result<()> {
-    // Use cargo_metadata to automatically respect cargo's --manifest-path option
-    // This is the idiomatic way for cargo subcommands
-    use cargo_metadata::MetadataCommand;
-
-    let metadata = MetadataCommand::new().exec().context(
-        "Failed to get cargo metadata. Make sure you're in a Cargo project or use --manifest-path.",
-    )?;
-
-    // Determine workspace root: use explicit workspace_path (if it's a directory),
-    // or derive from metadata
-    // Note: workspace_path is currently unused but kept for potential future use
-    // (e.g., filtering packages by location)
-    let _workspace_path = if let Some(ws_path) = &args.workspace_path {
-        // If it's a Cargo.toml file, get its parent directory
-        if ws_path.ends_with("Cargo.toml") {
-            ws_path
-                .parent()
-                .context("Cargo.toml has no parent directory")?
-                .to_path_buf()
-        } else {
-            ws_path.clone()
-        }
-    } else {
-        metadata.workspace_root.as_std_path().to_path_buf()
-    };
-
     let target_features: HashSet<String> = args
         .features
         .split(',')
         .map(|s| s.trim().to_string())
         .collect();
 
-    let mut logger = Logger::new(args.quiet);
+    let mut logger = ProgressLogger::new(args.quiet);
 
     // Use cargo_metadata to get all workspace packages - no need to manually
     // discover! Process all packages in the workspace (supports both single-package
     // projects and workspace projects with packages in crates/ or elsewhere).
-    let mut crates: Vec<CrateInfo> = metadata
-        .packages
+    let packages = cargo_plugin_utils::get_workspace_packages(args.manifest_path.as_deref())
+        .context("Failed to get cargo metadata. Make sure you're in a Cargo project or use --manifest-path.")?;
+
+    let mut crates: Vec<CrateInfo> = packages
         .iter()
         .filter_map(|pkg| {
             let manifest_dir = pkg.manifest_path.as_std_path().parent()?;
@@ -252,8 +118,7 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
         .collect();
 
     // Build a set of workspace package names for efficient lookup
-    let workspace_package_names: HashSet<String> = metadata
-        .packages
+    let workspace_package_names: HashSet<String> = packages
         .iter()
         .map(|p| p.name.as_str().to_string())
         .collect();
@@ -493,7 +358,7 @@ fn remove_hardcoded_features(
     target_features: &HashSet<String>,
     crate_name: &str,
     workspace_package_names: &HashSet<String>,
-    logger: &mut Logger,
+    logger: &mut ProgressLogger,
 ) -> Result<bool> {
     let mut changed = false;
 
