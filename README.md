@@ -15,29 +15,54 @@ For any crate A with feature X depending on crate B that also has
 feature X, this tool ensures that crate A's feature X includes "B/X"
 in its feature dependencies.
 
+This ensures that when you enable a feature on a crate, all its
+dependencies that have the same feature also get that feature enabled.
+Without this, enabling a feature might not work correctly because
+dependencies don't have their corresponding features enabled.
+
 ## Example
 
-If `ekg-deployment-config` has features `[backend, cli, desktop, web]`
-and depends on `ekg-types` which also has those features, this tool
-will update:
+Consider a workspace with three crates:
+
+- `my-app` depends on `my-library` and `my-utils`
+- All three crates have the same features: `backend`, `cli`, `desktop`, `web`
+
+When you enable the `backend` feature on `my-app`, you typically want
+the `backend` features of `my-library` and `my-utils` to also be
+enabled. This tool automatically adds those feature dependencies.
+
+**Before running the tool:**
 
 ```toml
+# my-app/Cargo.toml
+[dependencies]
+my-library = { path = "../my-library" }
+my-utils = { path = "../my-utils" }
+
 [features]
-backend = []
+backend = []      # ❌ Doesn't enable backend features on dependencies
 cli = []
 desktop = []
 web = []
 ```
 
-To:
+**After running the tool:**
 
 ```toml
+# my-app/Cargo.toml
+[dependencies]
+my-library = { path = "../my-library" }
+my-utils = { path = "../my-utils" }
+
 [features]
-backend = ["ekg-types/backend", "ekg-constants/backend", "ekg-util-env/backend"]
-cli = ["ekg-types/cli", "ekg-constants/cli", "ekg-util-env/cli"]
-desktop = ["ekg-types/desktop", "ekg-constants/desktop", "ekg-util-env/desktop"]
-web = ["ekg-types/web", "ekg-constants/web", "ekg-util-env/web"]
+backend = ["my-library/backend", "my-utils/backend"]  # ✅ Now properly propagates
+cli = ["my-library/cli", "my-utils/cli"]
+desktop = ["my-library/desktop", "my-utils/desktop"]
+web = ["my-library/web", "my-utils/web"]
 ```
+
+Now when you build with `cargo build --features backend`, the `backend`
+features on `my-library` and `my-utils` will also be enabled.
 
 ## Installation
 
