@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/cargo-propagate-features.svg)](https://crates.io/crates/cargo-propagate-features)
 [![Documentation](https://docs.rs/cargo-propagate-features/badge.svg)](https://docs.rs/cargo-propagate-features)
-[![CI](https://github.com/agnos-ai/cargo-propagate-features/workflows/CI%2FCD/badge.svg)](https://github.com/agnos-ai/cargo-propagate-features/actions)
+[![CI](https://github.com/dataroadinc/cargo-propagate-features/workflows/CI%2FCD/badge.svg)](https://github.com/dataroadinc/cargo-propagate-features/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/crates/d/cargo-propagate-features.svg)](https://crates.io/crates/cargo-propagate-features)
 
