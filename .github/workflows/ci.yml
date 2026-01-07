@@ -81,7 +81,14 @@ jobs:
       - name: Run tests
         run: cargo test
       - name: Run doc tests
-        run: cargo test --doc
+        shell: bash
+        run: |
+          # Only run doc tests if the package has a library target
+          if cargo metadata --format-version 1 --no-deps | grep -q '"lib"'; then
+            cargo test --doc
+          else
+            echo "Skipping doc tests: package has no library target"
+          fi
 
   # Detect version changes and prepare for release
   version-check:
