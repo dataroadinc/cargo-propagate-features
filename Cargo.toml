@@ -5,9 +5,9 @@ version = "0.0.1"
 edition = "2024"
 license-file = "LICENSE"
 authors = ["Jacobus Geluk <jacobus@dataroad.com>"]
-repository = "https://github.com/agnos-ai/cargo-propagate-features"
+repository = "git@github.com:dataroadinc/cargo-propagate-features.git"
 documentation = "https://docs.rs/cargo-propagate-features"
-homepage = "https://github.com/agnos-ai/cargo-propagate-features"
+homepage = "https://github.com/dataroadinc/cargo-propagate-features"
 rust-version = "1.92.0"
 readme = "README.md"
 keywords = ["cargo", "features", "workspace", "cli"]
@@ -47,5 +47,5 @@ cargo-plugin-utils = { path = "../cargo-plugin-utils" }
 cargo-version-info = "0.0.3"
 
 [package.metadata.binstall]
-pkg-url = "https://github.com/agnos-ai/cargo-propagate-features/releases/download/v{{version}}/cargo-propagate-features-{{target}}-{{version}}.tar.gz"
+pkg-url = "https://github.com/dataroadinc/cargo-propagate-features/releases/download/v{{version}}/cargo-propagate-features-{{target}}-{{version}}.tar.gz"
 pkg-fmt = "tar.gz"
