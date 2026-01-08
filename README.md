@@ -25,7 +25,8 @@ dependencies don't have their corresponding features enabled.
 Consider a workspace with three crates:
 
 - `my-app` depends on `my-library` and `my-utils`
-- All three crates have the same features: `backend`, `cli`, `desktop`, `web`
+- All three crates have the same features: `backend`, `cli`,
+  `desktop`, `web`
 
 When you enable the `backend` feature on `my-app`, you typically want
 the `backend` features of `my-library` and `my-utils` to also be
@@ -61,8 +62,9 @@ desktop = ["my-library/desktop", "my-utils/desktop"]
 web = ["my-library/web", "my-utils/web"]
 ```
 
-Now when you build with `cargo build --features backend`, the `backend`
-features on `my-library` and `my-utils` will also be enabled.
+Now when you build with `cargo build --features backend`, the
+`backend` features on `my-library` and `my-utils` will also be
+enabled.
 
 ## Installation
 
@@ -113,4 +115,5 @@ installed and invoked via `cargo`:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+Creative Commons Attribution-ShareAlike 4.0 International License -
+see [LICENSE](LICENSE) file for details.
