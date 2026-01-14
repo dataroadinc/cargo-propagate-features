@@ -11,15 +11,8 @@
         "editor.wordWrap": "bounded",
         "editor.wordWrapColumn": 70
     },
-    "markdownlint.config": {
-        "MD013": {
-            "line_length": 70,
-            "code_blocks": false,
-            "tables": false,
-            "headings": false,
-            "headings_line_length": false
-        }
-    },
+    "markdownlint.run": "onSave",
+    "markdownlint.fixOnSave": true,
     "markdownlint.ignore": [
         "**/LICENSE",
         "LICENSE"
