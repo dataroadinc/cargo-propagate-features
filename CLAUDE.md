@@ -70,6 +70,27 @@ Key dependencies:
 - `cargo_plugin_utils`: Workspace package discovery via cargo_metadata
 - `cargo-version-info`: Dynamic version computation in build.rs
 
+## GitHub Actions Integration
+
+The `dataroadinc/github-actions` repository provides a reusable action
+for installing this tool in CI workflows:
+
+```yaml
+- name: Setup cargo-propagate-features
+  uses: dataroadinc/github-actions/.github/actions/setup-cargo-propagate-features@main
+  with:
+    version: "0.2.0"  # Optional, defaults to latest
+```
+
+The action:
+
+- Installs via cargo-binstall for fast binary downloads
+- Caches the binary by version, OS, and architecture
+- Adds `~/.cargo/bin` to PATH
+- Depends on `setup-cargo-binstall` (automatically invoked)
+
+Source: `../github-actions/.github/actions/setup-cargo-propagate-features/`
+
 ## Version Management
 
 Version is computed dynamically via `build.rs` using:
