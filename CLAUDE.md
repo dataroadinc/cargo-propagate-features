@@ -3,6 +3,28 @@
 This file provides guidance to Claude Code (claude.ai/code) when
 working with code in this repository.
 
+## Related Projects
+
+This crate is part of a family of Rust projects that share the same
+coding standards, tooling, and workflows:
+
+Cargo plugins:
+
+- `cargo-fmt-toml` - Format and normalize Cargo.toml files
+- `cargo-nightly` - Nightly toolchain management
+- `cargo-plugin-utils` - Shared utilities for cargo plugins
+- `cargo-propagate-features` - Propagate features to dependencies
+- `cargo-version-info` - Dynamic version computation
+
+Other Rust crates:
+
+- `dotenvage` - Environment variable management
+
+All projects use identical configurations for rustfmt, clippy,
+markdownlint, cocogitto, and git hooks. When making changes to
+tooling or workflow conventions, apply them consistently across
+all repositories.
+
 ## Project Overview
 
 `cargo-propagate-features` is a Cargo subcommand that automatically
@@ -93,21 +115,24 @@ Source: `../github-actions/.github/actions/setup-cargo-propagate-features/`
 
 ## Version Management
 
-Version is computed dynamically via `build.rs` using:
-
-1. `BUILD_VERSION` env var (CI)
-2. GitHub API (in GitHub Actions)
-3. Cargo.toml version + git SHA
-4. Fallback: `0.0.0-dev-<short-sha>`
-
-Releases are automated: bump version in Cargo.toml, merge to main, CI
-handles tagging and publishing. To bump the version:
+Use `cargo version-info bump` for version management. This command
+updates Cargo.toml and creates a commit, but does NOT create tags
+(tags are created by CI after tests pass).
 
 ```bash
-cog bump --patch   # 0.0.1 -> 0.0.2
-cog bump --minor   # 0.1.0 -> 0.2.0
-cog bump --major   # 1.0.0 -> 2.0.0
+cargo version-info bump --patch   # 0.0.1 -> 0.0.2
+cargo version-info bump --minor   # 0.1.0 -> 0.2.0
+cargo version-info bump --major   # 1.0.0 -> 2.0.0
 ```
+
+**Do NOT use `cog bump`** - it creates local tags which conflict
+with CI's tag creation workflow.
+
+**Workflow:**
+
+1. Create PR with version bump commit
+2. Merge PR to main
+3. CI detects version change, creates tag, publishes release
 
 ## Git workflow
 
