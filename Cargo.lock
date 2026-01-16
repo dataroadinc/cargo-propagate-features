@@ -317,7 +317,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-propagate-features"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "cargo-plugin-utils",
@@ -326,7 +326,7 @@ dependencies = [
  "serde",
  "sloughi",
  "tempfile",
- "toml_edit 0.23.9",
+ "toml_edit",
 ]
 
 [[package]]
@@ -357,7 +357,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml 0.9.8",
- "toml_edit 0.24.0+spec-1.1.0",
+ "toml_edit",
 ]
 
 [[package]]
@@ -3737,19 +3737,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92e1cfed4a3038bc5a127e35a2d360f145e1f4b971b551a2ba5fd7aedf7e1347"
 dependencies = [
  "serde_core",
-]
-
-[[package]]
-name = "toml_edit"
-version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d7cbc3b4b49633d57a0509303158ca50de80ae32c265093b24c414705807832"
-dependencies = [
- "indexmap",
- "toml_datetime",
- "toml_parser",
- "toml_writer",
- "winnow",
 ]
 
 [[package]]
