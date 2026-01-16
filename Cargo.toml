@@ -44,7 +44,7 @@ toml_edit = "=0.23.9"
 cargo-plugin-utils = "0.0.8"
 
 [build-dependencies]
-cargo-version-info = "0.0.7"
+cargo-version-info = "0.0.9"
 sloughi = "0.3"
 
 [dev-dependencies]
