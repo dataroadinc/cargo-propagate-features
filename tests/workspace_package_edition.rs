@@ -40,7 +40,8 @@ version = "0.1.0"
     fs::create_dir_all(workspace_root.join("crates/crate-b/src"))
         .expect("Failed to create crate-b directory");
 
-    // Create crate-a that inherits edition and has a feature that depends on crate-b
+    // Create crate-a that inherits edition and has a feature that depends on
+    // crate-b
     let crate_a_toml = r#"[package]
 name = "crate-a"
 edition.workspace = true
@@ -53,8 +54,11 @@ crate-b = { path = "../crate-b" }
 default = []
 web = []
 "#;
-    fs::write(workspace_root.join("crates/crate-a/Cargo.toml"), crate_a_toml)
-        .expect("Failed to write crate-a Cargo.toml");
+    fs::write(
+        workspace_root.join("crates/crate-a/Cargo.toml"),
+        crate_a_toml,
+    )
+    .expect("Failed to write crate-a Cargo.toml");
     fs::write(
         workspace_root.join("crates/crate-a/src/lib.rs"),
         "// crate-a\n",
@@ -71,8 +75,11 @@ version.workspace = true
 default = []
 web = []
 "#;
-    fs::write(workspace_root.join("crates/crate-b/Cargo.toml"), crate_b_toml)
-        .expect("Failed to write crate-b Cargo.toml");
+    fs::write(
+        workspace_root.join("crates/crate-b/Cargo.toml"),
+        crate_b_toml,
+    )
+    .expect("Failed to write crate-b Cargo.toml");
     fs::write(
         workspace_root.join("crates/crate-b/src/lib.rs"),
         "// crate-b\n",
@@ -135,8 +142,11 @@ version = "0.1.0"
 default = []
 web = []
 "#;
-    fs::write(workspace_root.join("crates/crate-a/Cargo.toml"), crate_a_toml)
-        .expect("Failed to write crate-a Cargo.toml");
+    fs::write(
+        workspace_root.join("crates/crate-a/Cargo.toml"),
+        crate_a_toml,
+    )
+    .expect("Failed to write crate-a Cargo.toml");
     fs::write(
         workspace_root.join("crates/crate-a/src/lib.rs"),
         "// crate-a\n",
