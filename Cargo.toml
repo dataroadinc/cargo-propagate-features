@@ -34,7 +34,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.100"
-clap = { version = "4.5.53", default-features = false, features = [
+clap = { version = "4.5.56", default-features = false, features = [
     "derive",
     "env",
     "std",
@@ -44,7 +44,7 @@ toml_edit = "=0.24.0"
 cargo-plugin-utils = "0.0.8"
 
 [build-dependencies]
-cargo-version-info = "0.0.9"
+cargo-version-info = "0.0.15"
 sloughi = "0.3"
 
 [dev-dependencies]
