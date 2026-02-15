@@ -33,18 +33,18 @@ name = "cargo-propagate-features"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.100"
-clap = { version = "4.5.53", default-features = false, features = [
+anyhow = "1.0.101"
+clap = { version = "4.5.58", default-features = false, features = [
     "derive",
     "env",
     "std",
 ] }
 serde = { version = "1", features = ["derive"] }
-toml_edit = "=0.24.0"
+toml_edit = "=0.25.1"
 cargo-plugin-utils = "0.0.8"
 
 [build-dependencies]
-cargo-version-info = "0.0.9"
+cargo-version-info = "0.0.15"
 sloughi = "0.3"
 
 [dev-dependencies]
