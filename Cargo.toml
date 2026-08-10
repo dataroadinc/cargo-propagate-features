@@ -40,11 +40,11 @@ clap = { version = "4.5.53", default-features = false, features = [
     "std",
 ] }
 serde = { version = "1", features = ["derive"] }
-toml_edit = "=0.24.0"
-cargo-plugin-utils = "0.0.8"
+toml_edit = "=0.25.4"
+cargo-plugin-utils = "0.0.10"
 
 [build-dependencies]
-cargo-version-info = "0.0.9"
+cargo-version-info = "0.0.17"
 sloughi = "0.3"
 
 [dev-dependencies]
