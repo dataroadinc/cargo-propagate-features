@@ -2,8 +2,8 @@
 
 [![Crates.io](https://img.shields.io/crates/v/cargo-propagate-features.svg)](https://crates.io/crates/cargo-propagate-features)
 [![Documentation](https://docs.rs/cargo-propagate-features/badge.svg)](https://docs.rs/cargo-propagate-features)
-[![CI](https://github.com/dataroadinc/cargo-propagate-features/workflows/CI%2FCD/badge.svg)](https://github.com/dataroadinc/cargo-propagate-features/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/legra-ai/cargo-propagate-features/actions/workflows/ci.yml/badge.svg)](https://github.com/legra-ai/cargo-propagate-features/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 [![Downloads](https://img.shields.io/crates/d/cargo-propagate-features.svg)](https://crates.io/crates/cargo-propagate-features)
 
 Cargo subcommand to automatically propagate workspace crate features
@@ -115,5 +115,7 @@ installed and invoked via `cargo`:
 
 ## License
 
-Creative Commons Attribution-ShareAlike 4.0 International License -
-see [LICENSE](LICENSE) file for details.
+Copyright © 2026 DataRoad Inc, Delaware, USA, trading as Legra.
+
+Licensed under either the [MIT license](LICENSE-MIT) or the
+[Apache License, Version 2.0](LICENSE-APACHE), at your option.
