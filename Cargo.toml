@@ -1,7 +1,7 @@
 [package]
 name = "cargo-propagate-features"
 description = "Cargo subcommand to automatically propagate workspace crate features to dependencies"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Jacobus Geluk <jacobus@dataroad.com>"]
@@ -33,18 +33,18 @@ name = "cargo-propagate-features"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.100"
-clap = { version = "4.5.53", default-features = false, features = [
+anyhow = "1.0.104"
+clap = { version = "4.6.6", default-features = false, features = [
     "derive",
     "env",
     "std",
 ] }
 serde = { version = "1", features = ["derive"] }
-toml_edit = "=0.24.0"
-cargo-plugin-utils = "0.0.8"
+toml_edit = "=0.25.13"
+cargo-plugin-utils = "0.0.10"
 
 [build-dependencies]
-cargo-version-info = "0.0.9"
+cargo-version-info = "0.0.19"
 sloughi = "0.3"
 
 [dev-dependencies]
