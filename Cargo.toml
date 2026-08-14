@@ -1,7 +1,7 @@
 [package]
 name = "cargo-propagate-features"
 description = "Cargo subcommand to automatically propagate workspace crate features to dependencies"
-version = "0.0.6"
+version = "0.0.7"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Jacobus Geluk <jacobus@dataroad.com>"]
