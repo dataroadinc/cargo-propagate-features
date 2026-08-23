@@ -15,6 +15,10 @@ use anyhow::{
     Context,
     Result,
 };
+use async_fs_io::{
+    read_string_bounded,
+    write_bytes,
+};
 use cargo_plugin_utils::ProgressLogger;
 use clap::Parser;
 use toml_edit::{
@@ -69,15 +73,16 @@ struct CrateInfo {
     dependencies: HashSet<String>,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::PropagateFeatures(args) => propagate_features(args),
+        Command::PropagateFeatures(args) => propagate_features(args).await,
     }
 }
 
-fn propagate_features(args: PropagateArgs) -> Result<()> {
+async fn propagate_features(args: PropagateArgs) -> Result<()> {
     let target_features: HashSet<String> = args
         .features
         .split(',')
@@ -146,7 +151,8 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
         logger.inc();
 
         let cargo_toml_path = crate_info.path.join("Cargo.toml");
-        let content = std::fs::read_to_string(&cargo_toml_path)
+        let content = read_string_bounded(&cargo_toml_path, 16 * 1024 * 1024)
+            .await
             .context(format!("Failed to read {:?}", cargo_toml_path))?;
 
         let mut doc = content
@@ -234,7 +240,9 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
             if args.dry_run {
                 logger.println(&format!("   [DRY RUN] Would update {:?}", cargo_toml_path));
             } else {
-                std::fs::write(&cargo_toml_path, doc.to_string())
+                let output = doc.to_string();
+                write_bytes(&cargo_toml_path, output.as_bytes())
+                    .await
                     .context(format!("Failed to write {:?}", cargo_toml_path))?;
                 logger.println(&format!("   💾 Updated {:?}", cargo_toml_path));
             }
@@ -260,7 +268,8 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
         }
 
         let cargo_toml_path = crate_info.path.join("Cargo.toml");
-        let content = std::fs::read_to_string(&cargo_toml_path)
+        let content = read_string_bounded(&cargo_toml_path, 16 * 1024 * 1024)
+            .await
             .context(format!("Failed to read {:?}", cargo_toml_path))?;
 
         let mut doc = content
@@ -326,7 +335,9 @@ fn propagate_features(args: PropagateArgs) -> Result<()> {
             if args.dry_run {
                 logger.println(&format!("   [DRY RUN] Would update {:?}", cargo_toml_path));
             } else {
-                std::fs::write(&cargo_toml_path, doc.to_string())
+                let output = doc.to_string();
+                write_bytes(&cargo_toml_path, output.as_bytes())
+                    .await
                     .context(format!("Failed to write {:?}", cargo_toml_path))?;
                 logger.println(&format!("   💾 Updated {:?}", cargo_toml_path));
             }

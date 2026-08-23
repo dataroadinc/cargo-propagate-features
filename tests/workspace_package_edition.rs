@@ -7,8 +7,13 @@
 //! Regression test for: https://github.com/dataroadinc/cargo-propagate-features/issues/1
 //! The original error was: `workspace.package.edition` was not defined
 
-use std::fs;
 use std::process::Command;
+
+async fn write_file(path: impl AsRef<std::path::Path>, content: &str) {
+    async_fs_io::write_bytes(path, content.as_bytes())
+        .await
+        .expect("write test file");
+}
 
 /// Test that the tool works with a workspace that uses inherited edition.
 ///
@@ -16,10 +21,12 @@ use std::process::Command;
 /// - A root Cargo.toml with `[workspace.package]` containing `edition = "2024"`
 /// - A member crate that inherits the edition via `edition.workspace = true`
 /// - A second member crate with a feature that should be propagated
-#[test]
-fn test_workspace_inherited_edition() {
+#[tokio::test]
+async fn test_workspace_inherited_edition() {
     // Create a temporary directory for our test workspace
-    let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+    let temp_dir = async_fs_io::TempDir::create(std::env::temp_dir())
+        .await
+        .expect("Failed to create temp dir");
     let workspace_root = temp_dir.path();
 
     // Create the workspace root Cargo.toml with [workspace.package]
@@ -31,13 +38,14 @@ members = ["crates/*"]
 edition = "2024"
 version = "0.1.0"
 "#;
-    fs::write(workspace_root.join("Cargo.toml"), workspace_toml)
-        .expect("Failed to write workspace Cargo.toml");
+    write_file(workspace_root.join("Cargo.toml"), workspace_toml).await;
 
     // Create the crates directory
-    fs::create_dir_all(workspace_root.join("crates/crate-a/src"))
+    async_fs_io::ensure_dir(workspace_root.join("crates/crate-a/src"))
+        .await
         .expect("Failed to create crate-a directory");
-    fs::create_dir_all(workspace_root.join("crates/crate-b/src"))
+    async_fs_io::ensure_dir(workspace_root.join("crates/crate-b/src"))
+        .await
         .expect("Failed to create crate-b directory");
 
     // Create crate-a that inherits edition and has a feature that depends on
@@ -54,16 +62,16 @@ crate-b = { path = "../crate-b" }
 default = []
 web = []
 "#;
-    fs::write(
+    write_file(
         workspace_root.join("crates/crate-a/Cargo.toml"),
         crate_a_toml,
     )
-    .expect("Failed to write crate-a Cargo.toml");
-    fs::write(
+    .await;
+    write_file(
         workspace_root.join("crates/crate-a/src/lib.rs"),
         "// crate-a\n",
     )
-    .expect("Failed to write crate-a lib.rs");
+    .await;
 
     // Create crate-b that inherits edition and has the same feature
     let crate_b_toml = r#"[package]
@@ -75,16 +83,16 @@ version.workspace = true
 default = []
 web = []
 "#;
-    fs::write(
+    write_file(
         workspace_root.join("crates/crate-b/Cargo.toml"),
         crate_b_toml,
     )
-    .expect("Failed to write crate-b Cargo.toml");
-    fs::write(
+    .await;
+    write_file(
         workspace_root.join("crates/crate-b/src/lib.rs"),
         "// crate-b\n",
     )
-    .expect("Failed to write crate-b lib.rs");
+    .await;
 
     // Run cargo-propagate-features with --dry-run
     let output = Command::new(env!("CARGO_BIN_EXE_cargo-propagate-features"))
@@ -115,9 +123,11 @@ web = []
 
 /// Test that the tool also works with a workspace that uses Rust 2024 edition
 /// directly in crates (not inherited).
-#[test]
-fn test_workspace_direct_edition_2024() {
-    let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+#[tokio::test]
+async fn test_workspace_direct_edition_2024() {
+    let temp_dir = async_fs_io::TempDir::create(std::env::temp_dir())
+        .await
+        .expect("Failed to create temp dir");
     let workspace_root = temp_dir.path();
 
     // Create a simple workspace without [workspace.package]
@@ -125,11 +135,11 @@ fn test_workspace_direct_edition_2024() {
 resolver = "2"
 members = ["crates/*"]
 "#;
-    fs::write(workspace_root.join("Cargo.toml"), workspace_toml)
-        .expect("Failed to write workspace Cargo.toml");
+    write_file(workspace_root.join("Cargo.toml"), workspace_toml).await;
 
     // Create the crates directory
-    fs::create_dir_all(workspace_root.join("crates/crate-a/src"))
+    async_fs_io::ensure_dir(workspace_root.join("crates/crate-a/src"))
+        .await
         .expect("Failed to create crate-a directory");
 
     // Create a crate with edition = "2024" directly
@@ -142,16 +152,16 @@ version = "0.1.0"
 default = []
 web = []
 "#;
-    fs::write(
+    write_file(
         workspace_root.join("crates/crate-a/Cargo.toml"),
         crate_a_toml,
     )
-    .expect("Failed to write crate-a Cargo.toml");
-    fs::write(
+    .await;
+    write_file(
         workspace_root.join("crates/crate-a/src/lib.rs"),
         "// crate-a\n",
     )
-    .expect("Failed to write crate-a lib.rs");
+    .await;
 
     // Run cargo-propagate-features with --dry-run
     let output = Command::new(env!("CARGO_BIN_EXE_cargo-propagate-features"))
